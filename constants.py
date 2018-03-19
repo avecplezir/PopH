@@ -9,7 +9,7 @@ genre = [
 
 styles = [
        [
-        'data/test',
+        'data/bach',
     ],
 #     [
 #         'data/abba',
