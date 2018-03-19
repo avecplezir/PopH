@@ -9,7 +9,11 @@ genre = [
 
 styles = [
        [
+<<<<<<< HEAD
         'data/test',
+=======
+        'data/Mozart',
+>>>>>>> 395527decf2fd675d541e2e95cd03c16156f6bc8
     ],
 #     [
 #         'data/abba',
