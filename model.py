@@ -11,6 +11,8 @@ from keras import losses
 from util import *
 from constants import *
 
+from keras.utils import multi_gpu_model
+
 def primary_loss(y_true, y_pred):
     # 3 separate loss calculations based on if note is played or not
     played = y_true[:, :, :, 0]
@@ -129,6 +131,10 @@ def build_models(time_steps=SEQ_LEN, input_dropout=0.2, dropout=0.5):
     notes_out = naxis(time_out, chosen)
 
     model = Model([notes_in, chosen_in, beat_in], [notes_out])
+
+    if len(K.tensorflow_backend._get_available_gpus())>=2:
+        model = multi_gpu_model(model)
+
     model.compile(optimizer='nadam', loss=[primary_loss])
 
     """ Generation Models """
