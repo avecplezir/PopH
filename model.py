@@ -132,9 +132,9 @@ def build_models(time_steps=SEQ_LEN, input_dropout=0.2, dropout=0.5):
 
     model = Model([notes_in, chosen_in, beat_in], [notes_out])
 
-    if len(K.tensorflow_backend._get_available_gpus())>=2:
-        model = multi_gpu_model(model)
-
+#     if len(K.tensorflow_backend._get_available_gpus())>=2:
+    model = multi_gpu_model(model)
+    #print(model)
     model.compile(optimizer='nadam', loss=[primary_loss])
 
     """ Generation Models """
