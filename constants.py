@@ -9,7 +9,7 @@ genre = [
 
 styles = [
        [
-        'data/Bach1',
+        'data/test',
     ],
 #     [
 #         'data/abba',
@@ -45,6 +45,13 @@ styles = [
 #     ]
 ]
 
+#=============================
+DENSE_SIZE = 256
+PROJECTION_DIM = 64
+N_HEADS = 4
+
+#=============================
+
 NUM_STYLES = sum(len(s) for s in styles)
 
 # MIDI Resolution
@@ -69,7 +76,7 @@ NOTES_PER_BEAT = 4
 NOTES_PER_BAR = NOTES_PER_BEAT * BEATS_PER_BAR
 
 # Training parameters
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 SEQ_LEN = 8 * NOTES_PER_BAR
 
 # Hyper Parameters

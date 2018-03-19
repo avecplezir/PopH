@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 from keras.layers import Input, LSTM, Dense, Dropout, Lambda, Reshape, Permute
 from keras.layers import TimeDistributed, RepeatVector, Conv1D, Activation
-from keras.layers import Embedding, Flatten
+from keras.layers import Embedding, Flatten, dot, concatenate 
 from keras.layers.merge import Concatenate, Add
 from keras.models import Model
 import keras.backend as K
@@ -83,7 +83,6 @@ def time_axis(dropout):
     return f
 
 def note_axis(dropout):
-    dense_layer_cache = {}
     lstm_layer_cache = {}
     note_dense = Dense(2, activation='sigmoid', name='note_dense')
     volume_dense = Dense(1, name='volume_dense')
@@ -99,10 +98,6 @@ def note_axis(dropout):
 
 
         for l in range(NOTE_AXIS_LAYERS):
-            # Integrate style
-            if l not in dense_layer_cache:
-                dense_layer_cache[l] = Dense(int(x.get_shape()[3]))
-
             if l not in lstm_layer_cache:
                 lstm_layer_cache[l] = LSTM(NOTE_AXIS_UNITS, return_sequences=True)
 
@@ -152,3 +147,131 @@ def build_models(time_steps=SEQ_LEN, input_dropout=0.2, dropout=0.5):
     note_model = Model([note_features, chosen_gen_in], note_gen_out)
 
     return model, time_model, note_model
+
+def build_models_with_attention(time_steps=SEQ_LEN, input_dropout=0.2, dropout=0.5):
+    notes_in = Input((time_steps, NUM_NOTES, NOTE_UNITS))
+    beat_in = Input((time_steps, NOTES_PER_BAR))
+    # Target input for conditioning
+    chosen_in = Input((time_steps, NUM_NOTES, NOTE_UNITS))
+
+    # Dropout inputs
+    notes = Dropout(input_dropout)(notes_in)
+    beat = Dropout(input_dropout)(beat_in)
+    chosen = Dropout(input_dropout)(chosen_in)
+
+    """ Time axis """
+    time_out = time_axis(dropout)(notes, beat)
+    print('time_out', time_out.shape)
+
+    """ Note Axis & Prediction Layer """
+    naxis = note_axis_attention(dropout)
+    notes_out = naxis(time_out)
+    
+    model = Model([notes_in, chosen_in, beat_in], [notes_out])
+
+    if len(K.tensorflow_backend._get_available_gpus())>=2:
+        model = multi_gpu_model(model)
+
+    model.compile(optimizer='nadam', loss=[primary_loss])
+    
+    """ Generation Models """
+    time_model = Model([notes_in, beat_in], [time_out])
+
+    note_features = Input((1, NUM_NOTES, TIME_AXIS_UNITS), name='note_features')
+    chosen_gen_in = Input((1, NUM_NOTES, NOTE_UNITS), name='chosen_gen_in')
+   
+    # Dropout inputs
+    chosen_gen = Dropout(input_dropout)(chosen_gen_in)
+    
+    print('NUM_NOTES', NUM_NOTES)
+    note_gen_out = naxis(note_features)
+    
+    note_model = Model([note_features, chosen_gen_in], note_gen_out)
+
+    return model, time_model, note_model
+
+def note_axis_attention(dropout):
+    note_dense_att = Dense(2, activation='sigmoid', name='note_dense_att')
+    volume_dense_att = Dense(1, name='volume_dense_att')
+
+    def f(x):
+        x = attention_layer(x, x, False)
+        print('x_att', x.shape)
+        x = Dropout(dropout)(x)
+        print('x_drop', x.get_shape)
+#         x = Reshape((128, 48, -1))(x)
+
+        v = volume_dense_att(x)
+        
+        print('the end')
+        print('dense_vol', v.shape)
+  
+        return Concatenate(axis=-1)([note_dense_att(x), volume_dense_att(x)])
+    
+    return f
+
+def OneHeadAttention(a_drop, q_drop, drop_ratio=0.5):
+        
+    a_proj = Dense(PROJECTION_DIM, use_bias=False, kernel_initializer='glorot_normal')(a_drop)
+    q_proj = Dense(PROJECTION_DIM, use_bias=False, kernel_initializer='glorot_normal')(q_drop)
+    v_proj = Dense(PROJECTION_DIM, use_bias=False, kernel_initializer='glorot_normal')(a_drop)
+    
+    a_proj = Dropout(drop_ratio)(a_proj)
+    q_proj = Dropout(drop_ratio)(q_proj)
+    v_proj = Dropout(drop_ratio)(v_proj)
+    print('a_proj', a_proj.shape)
+    
+    n = Dense(2)(v_proj)
+    print('dense_note', n.shape)
+ 
+    
+    att_input = Lambda(lambda x: tf.matmul(x[0],x[1], transpose_b=True))([q_proj, a_proj])
+    print('att_input', att_input.shape)
+
+
+    att_weights = Activation('softmax')(att_input)
+    v_new = Lambda(lambda x: tf.matmul(x[0],x[1]))([att_weights, v_proj])
+    #tf.matmul(att_weights, v_proj)
+    print('v_new', v_new.get_shape)
+     
+    #v_new = Multiply()([q_proj, v_new])
+    
+    return v_new
+
+def MultyHeadAttention(a_drop, q_drop):
+
+    Attention_heads = []
+    for i in range(N_HEADS):
+        Attention_heads.append(OneHeadAttention(a_drop, q_drop))
+        
+    BigHead = concatenate(Attention_heads, axis=-1)
+    print('BigHead', BigHead.shape)
+    
+
+    #attention_output = Dense(DENSE_SIZE, use_bias=False)(BigHead)
+    #print('attention_output', attention_output.shape)
+
+           
+    return BigHead
+    
+def attention_layer(a_drop, q_drop, FF):
+    
+    print('a_drop', a_drop.shape)
+    res = MultyHeadAttention(a_drop, q_drop)
+    print('res', res.shape)
+        
+    att = Add()([res, res])
+    #att = normalize()(att)    
+ 
+    #Feed Forward
+    if FF:
+        att_ff = TimeDense(DENSE_SIZE*4, activation = 'relu')(att)
+        att_ff = Dense(DENSE_SIZE)(att_ff)   
+        att_ff = Dropout(0.1)(att_ff)
+        att_add = Add()([att, att_ff])
+        #att = normalize()(att_add) 
+    
+    return att
+
+
+
