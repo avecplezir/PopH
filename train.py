@@ -26,7 +26,7 @@ def train(models):
     ]
 
     print('Training')
-    models[0].fit(train_data, train_labels, epochs=1000, callbacks=cbs, batch_size=BATCH_SIZE)
+    models[0].fit(train_data, train_labels, epochs=1, callbacks=cbs, batch_size=BATCH_SIZE, validation_split=0.05)
 
 if __name__ == '__main__':
     main()

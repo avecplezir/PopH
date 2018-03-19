@@ -133,18 +133,11 @@ def write_file(name, results):
 def main():
     parser = argparse.ArgumentParser(description='Generates music.')
     parser.add_argument('--bars', default=4, type=int, help='Number of bars to generate')
-    parser.add_argument('--styles', default=None, type=int, nargs='+', help='Styles to mix together')
     args = parser.parse_args()
 
     models = build_or_load()
 
-    styles = [compute_genre(i) for i in range(len(genre))]
-
-    if args.styles:
-        # Custom style
-        styles = [np.mean([one_hot(i, NUM_STYLES) for i in args.styles], axis=0)]
-
-    write_file('output', generate(models, args.bars, styles))
+    write_file('output', generate(models, args.bars))
 
 if __name__ == '__main__':
     main()
