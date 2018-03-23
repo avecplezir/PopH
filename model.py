@@ -276,5 +276,41 @@ def attention_layer(a_drop, q_drop, FF):
     
     return att
 
+class normalize(Layer):
+
+    def init(self,  **kwargs):
+        super(normalize, self).init(**kwargs)
+
+    def build(self, input_shape):
+        # Create a trainable weight variable for this layer.
+      
+        self.a = self.add_weight(name='a',  shape = (1, ),
+                                      initializer='Ones', 
+                                      trainable=True)
+        
+        self.b = self.add_weight(name='b',  shape = (1, ),
+                                      initializer='Zeros', 
+                                      trainable=True)
+
+         
+        super(normalize, self).build(input_shape)  # Be sure to call this somewhere!
+
+        
+    def call(self, x):
+        
+        mean = K.mean(x, axis=-1, keepdims=True)
+        std = K.sqrt(K.var(x, axis=-1, keepdims=True) + K.constant(0.00001)) 
+        x_normalized = (x-mean)/std  
+        
+        #variance = tf.reduce_mean(tf.square(x - mean), axis=[-1], keep_dims=True)
+        #x_normalized = (x - mean) * tf.rsqrt(variance + epsilon)
+        
+             
+        x_out = x_normalized*self.a + self.b
+        
+        return x_out
+
+    def compute_output_shape(self, input_shape):
+        return input_shape
 
 
