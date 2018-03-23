@@ -8,7 +8,7 @@ from keras.models import Model
 import keras.backend as K
 from keras import losses
 
-from util import *
+from util import one_hot
 from constants import *
 
 from keras.utils import multi_gpu_model
@@ -51,6 +51,9 @@ def pitch_bins_f(time_steps):
     return f
 
 def time_axis(dropout):
+    """
+    LSTM along the time axis
+    """
     def f(notes, beat):
         time_steps = int(notes.get_shape()[1])
 
@@ -83,6 +86,9 @@ def time_axis(dropout):
     return f
 
 def note_axis(dropout):
+    """
+    LSTM along the note axis
+    """
     lstm_layer_cache = {}
     note_dense = Dense(2, activation='sigmoid', name='note_dense')
     volume_dense = Dense(1, name='volume_dense')
@@ -196,15 +202,12 @@ def note_axis_attention(dropout):
 
     def f(x):
         x = attention_layer(x, x, False)
-        print('x_att', x.shape)
+        #print('x_att', x.shape)
         x = Dropout(dropout)(x)
-        print('x_drop', x.get_shape)
-#         x = Reshape((128, 48, -1))(x)
-
-        v = volume_dense_att(x)
-        
-        print('the end')
-        print('dense_vol', v.shape)
+        #print('x_drop', x.get_shape)
+        #x = Reshape((128, 48, -1))(x)
+        #print('the end')
+        #print('dense_vol', v.shape)
   
         return Concatenate(axis=-1)([note_dense_att(x), volume_dense_att(x)])
     
@@ -219,22 +222,22 @@ def OneHeadAttention(a_drop, q_drop, drop_ratio=0.5):
     a_proj = Dropout(drop_ratio)(a_proj)
     q_proj = Dropout(drop_ratio)(q_proj)
     v_proj = Dropout(drop_ratio)(v_proj)
-    print('a_proj', a_proj.shape)
+    #print('a_proj', a_proj.shape)
     
     n = Dense(2)(v_proj)
-    print('dense_note', n.shape)
+    #print('dense_note', n.shape)
  
     
     att_input = Lambda(lambda x: tf.matmul(x[0],x[1], transpose_b=True))([q_proj, a_proj])
-    print('att_input', att_input.shape)
+    #print('att_input', att_input.shape)
 
 
     att_weights = Activation('softmax')(att_input)
     v_new = Lambda(lambda x: tf.matmul(x[0],x[1]))([att_weights, v_proj])
     #tf.matmul(att_weights, v_proj)
-    print('v_new', v_new.get_shape)
+    #print('v_new', v_new.get_shape)
      
-    #v_new = Multiply()([q_proj, v_new])
+    v_new = Multiply()([q_proj, v_new])
     
     return v_new
 
@@ -245,20 +248,20 @@ def MultyHeadAttention(a_drop, q_drop):
         Attention_heads.append(OneHeadAttention(a_drop, q_drop))
         
     BigHead = concatenate(Attention_heads, axis=-1)
-    print('BigHead', BigHead.shape)
+    #print('BigHead', BigHead.shape)
     
 
-    #attention_output = Dense(DENSE_SIZE, use_bias=False)(BigHead)
+    attention_output = Dense(DENSE_SIZE, use_bias=False)(BigHead)
     #print('attention_output', attention_output.shape)
 
            
-    return BigHead
+    return attention_output
     
 def attention_layer(a_drop, q_drop, FF):
     
-    print('a_drop', a_drop.shape)
+    #print('a_drop', a_drop.shape)
     res = MultyHeadAttention(a_drop, q_drop)
-    print('res', res.shape)
+    #print('res', res.shape)
         
     att = Add()([res, res])
     #att = normalize()(att)    

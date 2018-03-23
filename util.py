@@ -3,7 +3,7 @@ import tensorflow as tf
 import math
 
 from constants import *
-from midi_util import *
+from midi_util import midi_encode, midi_decode, load_midi
 
 def one_hot(i, nb_classes):
     arr = np.zeros((nb_classes,))

@@ -7,52 +7,18 @@ genre = [
     #'romantic'
 ]
 
+# where to look for songs to train nn on
 styles = [
        [
-<<<<<<< HEAD
         'data/test',
-=======
-        'data/Mozart',
->>>>>>> 395527decf2fd675d541e2e95cd03c16156f6bc8
     ],
-#     [
-#         'data/abba',
-#     ]
-#     [
-#         'data/baroque/bach',
-#         'data/baroque/handel',
-#         'data/baroque/pachelbel'
-#     ],
-#     [
-#         'data/classical/burgmueller',
-#         'data/classical/clementi',
-#         'data/classical/haydn',
-#         'data/classical/beethoven',
-#         'data/classical/brahms',
-#         'data/classical/mozart'
-#     ],
-#     [
-#         'data/romantic/balakirew',
-#         'data/romantic/borodin',
-#         'data/romantic/brahms',
-#         'data/romantic/chopin',
-#         'data/romantic/debussy',
-#         'data/romantic/liszt',
-#         'data/romantic/mendelssohn',
-#         'data/romantic/moszkowski',
-#         'data/romantic/mussorgsky',
-#         'data/romantic/rachmaninov',
-#         'data/romantic/schubert',
-#         'data/romantic/schumann',
-#         'data/romantic/tchaikovsky',
-#         'data/romantic/tschai'
-#     ]
 ]
 
 #=============================
-DENSE_SIZE = 256
+#self attention - number of heads, projection dim
 PROJECTION_DIM = 64
 N_HEADS = 4
+DENSE_SIZE = PROJECTION_DIM*N_HEADS
 
 #=============================
 
@@ -85,7 +51,7 @@ SEQ_LEN = 8 * NOTES_PER_BAR
 
 # Hyper Parameters
 OCTAVE_UNITS = 64
-STYLE_UNITS = 64
+
 NOTE_UNITS = 3
 TIME_AXIS_UNITS = 256
 NOTE_AXIS_UNITS = 128

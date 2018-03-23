@@ -6,10 +6,11 @@ import midi
 import os
 
 from constants import *
-from dataset import *
-from generate import *
+from dataset import load_all, 
+# from generate import write_file
 from midi_util import midi_encode
-from model import *
+from model import build_models
+from midi_util import build_or_load
 
 def main():
     models = build_or_load()
