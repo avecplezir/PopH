@@ -103,7 +103,9 @@ def generate(models, num_bars, Attention = False):
         ins = process_inputs([g.build_time_inputs() for g in generations])
         # Pick only the last time step
         note_features = time_model.predict(ins)
+#         print(note_features)
         note_features = np.array(note_features)[:, -1:, :]
+#         print(note_features)
 
         # Generate each note conditioned on previous
         if not Attention:
